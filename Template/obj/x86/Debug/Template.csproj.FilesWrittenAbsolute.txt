@@ -1,0 +1,4 @@
+/home/mike/Working/MonoProjects/Template/Template/bin/Debug/Template.exe.mdb
+/home/mike/Working/MonoProjects/Template/Template/bin/Debug/Template.exe
+/home/mike/Working/MonoProjects/Template/Template/obj/x86/Debug/Template.exe
+/home/mike/Working/MonoProjects/Template/Template/obj/x86/Debug/Template.exe.mdb

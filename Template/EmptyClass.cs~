@@ -1,0 +1,12 @@
+using System;
+
+namespace TemplateEngine
+{
+    public class Engine
+    {
+        public static void Main(string[] args)
+        {
+            Console.WriteLine("Hello World!");
+        }
+    }
+}
