@@ -1,0 +1,18 @@
+#User Specific
+*.userprefs
+*.usertasks
+
+#Mono Project Files
+*.pidb
+*.resources
+
+#Tests
+test-results/
+*/test-results
+
+#Builds
+*/bin/
+*/obj/
+
+#Backups
+*/*~

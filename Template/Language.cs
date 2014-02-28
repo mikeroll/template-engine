@@ -2,14 +2,9 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
-using System.Xml;
 using Microsoft.CSharp;
-using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Reflection;
-using System.Reflection.Emit;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace TemplateEngine
 {
@@ -28,14 +23,14 @@ namespace TemplateEngine
 		/// </summary>
 		/// <returns>Code in single string.</returns>
 		/// <param name="codePack">Chunks of code.</param>
-		string ComposeCode(List<Tuple<string, string>> codePack);
+		string ComposeCode(List<Tuple<TokenType, string>> codePack);
 
 		/// <summary>
 		/// Compiles composed code and runs it.
 		/// </summary>
 		/// <returns>TextWriter holding program output.</returns>
 		/// <param name="output">TextWriter to hold output.</param>
-		TextWriter CompileAndRun(TextWriter output);
+		void CompileAndRun(TextWriter output);
 	}
 
 	public class CSharp : ILanguage
@@ -96,20 +91,21 @@ namespace TemplateEngine
 			parameters.GenerateExecutable = false;
 			parameters.GenerateInMemory = true;
 			parameters.IncludeDebugInformation = false;
-			CompilerResults results = codeProvider.CompileAssemblyFromSource(
+			var results = codeProvider.CompileAssemblyFromSource(
 				parameters,
 				code
 			);
-			if (results.Errors.Count > 0)
+			if (results.Errors.HasErrors)
 			{
 				throw new BadCodeException("Compile error");
 			}
 			return results.CompiledAssembly;
 		}
 
-		public string ComposeCode(List<Tuple<string, string>> codePack)
+		public string ComposeCode(List<Tuple<TokenType, string>> codePack)
 		{
 			StringBuilder code = new StringBuilder();
+            code.Append("using System;\n\n");
 			code.Append("using System.IO;\n\n");
 			if (Namespaces != null)
 			{
@@ -129,21 +125,21 @@ namespace TemplateEngine
 			{
 				code.Append("JObject input = JObject.Parse(json);\n");
 			}
-			foreach (Tuple<string, string> chunk in codePack)
+			foreach (Tuple<TokenType, string> chunk in codePack)
 			{
 				switch (chunk.Item1)
 				{
-					case "text":
+					case TokenType.Text:
 						code.Append("output.Write(\"")
                             .Append(chunk.Item2)
                             .Append("\");\n");
 						break;
-					case "eval":
+					case TokenType.Eval:
 						code.Append("output.Write((")
                             .Append(chunk.Item2)
                             .Append(").ToString());\n");
 						break;
-					case "code":
+					case TokenType.Code:
 						code.Append(chunk.Item2);
 						break;
 				}
@@ -154,7 +150,7 @@ namespace TemplateEngine
 			return CodeToRun;
 		}
 
-		public TextWriter CompileAndRun(TextWriter output)
+		public void CompileAndRun(TextWriter output)
 		{
 			object tw = new object();
 			Assembly dll = BuildAssembly(CodeToRun);
@@ -172,14 +168,12 @@ namespace TemplateEngine
 			OutString = tw.ToString();
 			output.Write(OutString);
 			output = (TextWriter)tw;
-			return output;
 		}
 	}
 
 	public class Ruby : ILanguage
 	{
 		const int RubyNum = 17;
-
 		public string CodeToRun
 		{ 
 			get; 
@@ -197,25 +191,26 @@ namespace TemplateEngine
 
 		}
 
-		public string ComposeCode(List<Tuple<string, string>> codePack)
+		public string ComposeCode(List<Tuple<TokenType, string>> codePack)
 		{
 			StringBuilder code = new StringBuilder();
-			foreach (Tuple<string, string> chunk in codePack)
+			foreach (Tuple<TokenType, string> chunk in codePack)
 			{
 				switch (chunk.Item1)
 				{
-					case "text":
+					case TokenType.Text:
 						code.Append("print \"")
                             .Append(chunk.Item2)
                             .Append("\";");
 						break;
-					case "eval":
+					case TokenType.Eval:
 						code.Append("print ")
                             .Append(chunk.Item2)
                             .Append(";");
 						break;
-					case "code":
-						code.Append(chunk.Item2);
+                    case TokenType.Code:
+                        code.Append(chunk.Item2)
+                            .Append(";");
 						break;
 				}
 			}
@@ -223,12 +218,11 @@ namespace TemplateEngine
 			return CodeToRun;
 		}
 
-		public TextWriter CompileAndRun(TextWriter output)
+		public void CompileAndRun(TextWriter output)
 		{
 			var job = new IdeoneJob(CodeToRun, RubyNum);
 			OutString = job.Execute();
 			output.Write(OutString);
-			return output;
 		}
 	}
 
@@ -252,24 +246,24 @@ namespace TemplateEngine
 		{
 		}
 
-		public string ComposeCode(List<Tuple<string, string>> codePack)
+		public string ComposeCode(List<Tuple<TokenType, string>> codePack)
 		{
 			StringBuilder code = new StringBuilder();
-			foreach (Tuple<string, string> chunk in codePack)
+			foreach (Tuple<TokenType, string> chunk in codePack)
 			{
 				switch (chunk.Item1)
 				{
-					case "text":
+					case TokenType.Text:
 						code.Append(@"print(""")
                             .Append(chunk.Item2)
                                 .Append(@""", end='');");
 						break;
-					case "eval":
+					case TokenType.Eval:
 						code.Append(@"print(")
                             .Append(chunk.Item2)
                                 .Append(@", end='');");
 						break;
-					case "code":
+					case TokenType.Code:
 						code.Append(chunk.Item2);
 						break;
 				}
@@ -278,12 +272,11 @@ namespace TemplateEngine
 			return CodeToRun;
 		}
 
-		public TextWriter CompileAndRun(TextWriter output)
+		public void CompileAndRun(TextWriter output)
 		{
 			var job = new IdeoneJob(CodeToRun, PyNum);
 			OutString = job.Execute();
 			output.Write(OutString);
-			return output;
 		}
 	}
 
@@ -307,26 +300,26 @@ namespace TemplateEngine
 		{
 		}
 
-		public string ComposeCode(List<Tuple<string, string>> codePack)
+		public string ComposeCode(List<Tuple<TokenType, string>> codePack)
 		{
 			StringBuilder code = new StringBuilder();
 			code.Append("class JavaTemplate\n{\n")
             .Append("public static void main(String[] args)\n{\n");
-			foreach (Tuple<string, string> chunk in codePack)
+			foreach (Tuple<TokenType, string> chunk in codePack)
 			{
 				switch (chunk.Item1)
 				{
-					case "text":
+					case TokenType.Text:
 						code.Append(@"System.out.print(""")
                         .Append(chunk.Item2)
                             .Append(@""");");
 						break;
-					case "eval":
+					case TokenType.Eval:
 						code.Append(@"System.out.print(")
                         .Append(chunk.Item2)
                             .Append(@");");
 						break;
-					case "code":
+					case TokenType.Code:
 						code.Append(chunk.Item2);
 						break;
 				}
@@ -336,12 +329,11 @@ namespace TemplateEngine
 			return CodeToRun;
 		}
 
-		public TextWriter CompileAndRun(TextWriter output)
+		public void CompileAndRun(TextWriter output)
 		{
 			var job = new IdeoneJob(CodeToRun, JavaNum);
 			OutString = job.Execute();
 			output.Write(OutString);
-			return output;
 		}
 	}
 }

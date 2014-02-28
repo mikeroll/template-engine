@@ -14,21 +14,21 @@ namespace TemplateTests
 	public class ParseTest
 	{
 		string testSnippet;
-		List<Tuple<string, string>> chunksExpected;
+		List<Tuple<TokenType, string>> chunksExpected;
 
 		[Test]
 		public void AllInclusive()
 		{
 			testSnippet = "text0<%code0\n%>text1<%=expr\n%>\n<%code1%><%%>text5";
-			chunksExpected = new List<Tuple<string, string>>
+			chunksExpected = new List<Tuple<TokenType, string>>
 			{
-				new Tuple<string, string>("text", "text0"), 
-				new Tuple<string, string>("code", "code0\n"), 
-				new Tuple<string, string>("text", "text1"),
-				new Tuple<string, string>("eval", "expr\n"),
-				new Tuple<string, string>("text", @"\n"),
-				new Tuple<string, string>("code", "code1"),
-				new Tuple<string, string>("text", "text5"),
+				new Tuple<TokenType, string>(TokenType.Text, "text0"), 
+                new Tuple<TokenType, string>(TokenType.Code, "code0\n"), 
+                new Tuple<TokenType, string>(TokenType.Text, "text1"),
+                new Tuple<TokenType, string>(TokenType.Eval, "expr\n"),
+                new Tuple<TokenType, string>(TokenType.Text, @"\n"),
+                new Tuple<TokenType, string>(TokenType.Code, "code1"),
+                new Tuple<TokenType, string>(TokenType.Text, "text5"),
 			};        
 			Assert.AreEqual(chunksExpected, new Parser(testSnippet).Parse());
 		}
@@ -37,10 +37,10 @@ namespace TemplateTests
 		public void CodeOnly()
 		{
 			testSnippet = "<%code0%><%%><%code1%>";
-			chunksExpected = new List<Tuple<string, string>>
+            chunksExpected = new List<Tuple<TokenType, string>>
 			{
-				new Tuple<string, string>("code", "code0"),
-				new Tuple<string, string>("code", "code1")
+                new Tuple<TokenType, string>(TokenType.Code, "code0"),
+                new Tuple<TokenType, string>(TokenType.Code, "code1")
 			};        
 			Assert.AreEqual(chunksExpected, new Parser(testSnippet).Parse());
 		}
@@ -49,9 +49,9 @@ namespace TemplateTests
 		public void TextOnly()
 		{
 			testSnippet = "text1text2";
-			chunksExpected = new List<Tuple<string, string>>
+			chunksExpected = new List<Tuple<TokenType, string>>
 			{
-				new Tuple<string, string>("text", "text1text2")
+                new Tuple<TokenType, string>(TokenType.Text, "text1text2")
 			};        
 			Assert.AreEqual(chunksExpected, new Parser(testSnippet).Parse());
 		}
@@ -60,9 +60,9 @@ namespace TemplateTests
 		public void EvalOnly()
 		{
 			testSnippet = "<%=expr%>";
-			chunksExpected = new List<Tuple<string, string>>
+			chunksExpected = new List<Tuple<TokenType, string>>
 			{
-				new Tuple<string, string>("eval", "expr")
+                new Tuple<TokenType, string>(TokenType.Eval, "expr")
 			};        
 			Assert.AreEqual(chunksExpected, new Parser(testSnippet).Parse());
 		}
@@ -120,13 +120,13 @@ namespace TemplateTests
 		public void SpecialCharacters()
 		{
 			testSnippet = "\n<%%>\t<%%>\"<%%>\'<%\0%>";
-			chunksExpected = new List<Tuple<string, string>>
+            chunksExpected = new List<Tuple<TokenType, string>>
 			{
-				new Tuple<string, string>("text", @"\n"), 
-				new Tuple<string, string>("text", @"\t"), 
-				new Tuple<string, string>("text", @"\"""),
-				new Tuple<string, string>("text", @"\'"),
-				new Tuple<string, string>("code", "\0"),
+                new Tuple<TokenType, string>(TokenType.Text, @"\n"), 
+                new Tuple<TokenType, string>(TokenType.Text, @"\t"), 
+                new Tuple<TokenType, string>(TokenType.Text, @"\"""),
+                new Tuple<TokenType, string>(TokenType.Text, @"\'"),
+                new Tuple<TokenType, string>(TokenType.Code, "\0"),
 			};        
 			Assert.AreEqual(chunksExpected, new Parser(testSnippet).Parse());
 		}
@@ -137,7 +137,7 @@ namespace TemplateTests
 	{
 		string testSnippet;
 		string expectedCode;
-		List<Tuple<string,string>> chunks;
+		List<Tuple<TokenType,string>> chunks;
 		string actualCode;
 
 		[Test]
@@ -217,7 +217,7 @@ namespace TemplateTests
 	}
 
 	[TestFixture]
-	[Ignore("Slow network")]
+	[Ignore("Bad network")]
 	public class IdeoneTest
 	{
 		IdeoneJob testJob;
@@ -284,8 +284,8 @@ namespace TemplateTests
 	{
 		string testSnippet;
 		string expectedOutput;
-		string username = "mikeroll";
-		string apiPassword = "lucky_starfish";
+		const string username = "mikeroll";
+		const string apiPassword = "lucky_starfish";
         TextWriter output;
 
 		[SetUp]
@@ -294,20 +294,6 @@ namespace TemplateTests
 			IdeoneJob.Authorize(username, apiPassword);
             output = new StringWriter();
 		}
-
-        [Test]
-        public void CSharpUnicode()
-        {
-            var theWholeUTF16 = new StringBuilder();
-            for (int code = Char.MinValue; code < 55296; code++)
-                theWholeUTF16.Append((char)code);
-            for (int code = 57344; code < Char.MaxValue; code++)
-                theWholeUTF16.Append((char)code);
-            testSnippet = theWholeUTF16.ToString();
-            expectedOutput = testSnippet;
-            new Template(testSnippet, new CSharp()).Render(output);
-            Assert.That(String.Compare(expectedOutput, output.ToString()) == 0);
-        }
 
         [Test]
         public void CSharpAllInclusive()
@@ -324,7 +310,7 @@ namespace TemplateTests
         }
 
 		[Test]
-		[Ignore("Works for now")]
+		//[Ignore("Works for now")]
 		public void JavaAllInclusive()
 		{
 			testSnippet = @"""lol""<%for (int i = 0%><%; i < 9; i++) %>6<%=666*2%>";
@@ -334,17 +320,23 @@ namespace TemplateTests
 		}
 
 		[Test]
-		[Ignore("Works for now")]
+		//[Ignore("Works for now")]
 		public void RubyAllInclusive()
 		{
-			testSnippet = @"<%2.times {%>""chunky bacon!""<%};%><%=21*2%>";
-			expectedOutput = @"""chunky bacon!""""chunky bacon!""42";
+			testSnippet = 
+@"<html>
+  <% 2.times {%> chunky bacon! <%} %>
+</html>";
+			expectedOutput = 
+@"<html>
+   chunky bacon!  chunky bacon! 
+</html>";
 			new Template(testSnippet, new Ruby()).Render(output);
 			Assert.AreEqual(expectedOutput, output.ToString());
 		}
 
 		[Test]
-		[Ignore("Works for now")]
+		//[Ignore("Works for now")]
 		public void PythonAllInclusive()
 		{
 			testSnippet = "<%for i in %><%['dem', '\"snakes\"']:\n\tprint(i)\n%>over<%=9*(10**3)%>";

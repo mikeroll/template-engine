@@ -1,8 +1,5 @@
-using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace TemplateEngine
 {
@@ -42,7 +39,7 @@ namespace TemplateEngine
 		{
 			var chunks = new Parser(TemplateString).Parse();
 			language.ComposeCode(chunks);
-			language.CompileAndRun(output);
+            language.CompileAndRun(output);
 		}
 	}
 }

@@ -1,4 +1,0 @@
-/home/mike/Working/MonoProjects/Template/TemplateTests/bin/Debug/TemplateTests.dll.mdb
-/home/mike/Working/MonoProjects/Template/TemplateTests/bin/Debug/TemplateTests.dll
-/home/mike/Working/MonoProjects/Template/TemplateTests/obj/Debug/TemplateTests.dll
-/home/mike/Working/MonoProjects/Template/TemplateTests/obj/Debug/TemplateTests.dll.mdb

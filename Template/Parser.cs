@@ -5,6 +5,11 @@ using System.Collections.Generic;
 
 namespace TemplateEngine
 {
+    public enum TokenType
+    {
+        Code, Eval, Text
+    }
+
 	public class Parser
 	{
 		public string TemplateString
@@ -19,7 +24,7 @@ namespace TemplateEngine
 			private set; 
 		}
 
-		public List<Tuple<string, string>> Chunks
+		public List<Tuple<TokenType, string>> Chunks
 		{
 			get;
 			private set;
@@ -78,11 +83,11 @@ namespace TemplateEngine
 		}
 
 		/// <summary>
-		/// Parses the string from constructor into regex groups, 
-		/// stores group:value pairs in List<Tuple<string, string>>
+		/// Parses the string into regex groups, 
+		/// stores group:value pairs in List of Tuples
 		/// <returns>List of group:value pairs.</returns>;
 		/// </summary>
-		public List<Tuple<string, string>> Parse()
+		public List<Tuple<TokenType, string>> Parse()
 		{
 			Regex templateRegex = new Regex(
 				RegexString, 
@@ -97,16 +102,16 @@ namespace TemplateEngine
 
 			Chunks = matches.Groups["code"].Captures
                 .Cast<Capture>()
-                    .Select(p => new { Type = "code", p.Value, p.Index })
-                    .Concat(matches.Groups["text"].Captures
-                            .Cast<Capture>()
-                            .Select(p => new { Type = "text", Value = EscapeString(p.Value), p.Index }))
-                    .Concat(matches.Groups["eval"].Captures
-                            .Cast<Capture>()
-                            .Select(p => new { Type = "eval", p.Value, p.Index }))
-                    .OrderBy(p => p.Index)
-                    .Select(m => new Tuple<string, string>(m.Type, m.Value))
-                    .ToList();
+                .Select(p => new { Type = TokenType.Code, p.Value, p.Index })
+                .Concat(matches.Groups["text"].Captures
+                .Cast<Capture>()
+                .Select(p => new { Type = TokenType.Text, Value = EscapeString(p.Value), p.Index }))
+                .Concat(matches.Groups["eval"].Captures
+                .Cast<Capture>()
+                .Select(p => new { Type = TokenType.Eval, p.Value, p.Index }))
+                .OrderBy(p => p.Index)
+                .Select(m => new Tuple<TokenType, string>(m.Type, m.Value))
+                .ToList();
 
 			if (Chunks.Count == 0)
 			{
